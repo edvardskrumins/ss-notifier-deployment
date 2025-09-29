@@ -1,0 +1,7 @@
+# Environment 
+.env
+
+# Docker volumes
+postgres_data/
+elasticsearch_data/
+filebeat_data/
