@@ -3,4 +3,4 @@
 	url = https://github.com/edvardskrumins/ss-notifier-api
 [submodule "ss-notifier-web"]
 	path = ss-notifier-web
-	url = https://github.com/edvardskrumins/ss-notifier-web.git
+	url = https://github.com/edvardskrumins/ss-notifier-web
