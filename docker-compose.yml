@@ -31,6 +31,19 @@ services:
       - ss-notifier-network
     restart: "no"
 
+  web:
+    build: 
+      context: .
+      dockerfile: deployment/development/web/Dockerfile
+    container_name: ss-notifier-web
+    ports:
+      - "${WEB_PORT:-3001}:3000"
+    volumes:
+       - ./ss-notifier-web:/app
+    networks:
+      - ss-notifier-network
+    restart: "unless-stopped"
+
   pgsql:
     image: postgres:18.0
     container_name: ss-notifier-pgsql
