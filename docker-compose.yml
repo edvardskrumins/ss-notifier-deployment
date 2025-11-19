@@ -83,49 +83,52 @@ services:
       - ss-notifier-network
     restart: "unless-stopped"
 
-  # elasticsearch:
-  #   image: docker.elastic.co/elasticsearch/elasticsearch:9.1.4
-  #   container_name: ss-notifier-elasticsearch
-  #   environment:
-  #     - discovery.type=single-node
-  #     - "ES_JAVA_OPTS=${ES_JAVA_OPTS}"
-  #     - xpack.security.enabled=false
-  #   volumes:
-  #     - elasticsearch_data:/usr/share/elasticsearch/data
-  #   ports:
-  #     - "${ELASTICSEARCH_PORT:-9200}:9200"
-  #   networks:
-  #     - ss-notifier-network
-  #   restart: "unless-stopped"
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.1.4
+    container_name: ss-notifier-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=${ES_JAVA_OPTS}"
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    networks:
+      - ss-notifier-network
+    restart: "unless-stopped"
       
-  # kibana:
-  #   image: docker.elastic.co/kibana/kibana:9.1.4
-  #   container_name: ss-notifier-kibana
-  #   environment:
-  #     - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS}
-  #   ports:
-  #     - "${KIBANA_PORT:-5601}:5601"
-  #   depends_on:
-  #     - elasticsearch
-  #   networks:
-  #     - ss-notifier-network
-  #   restart: "unless-stopped"
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.1.4
+    container_name: ss-notifier-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS}
+    volumes:
+      - ./deployment/development/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    ports:
+      - "${KIBANA_PORT:-5601}:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - ss-notifier-network
+    restart: "unless-stopped"
 
-  # filebeat:
-  #   image: docker.elastic.co/beats/filebeat:9.1.4
-  #   container_name: ss-notifier-filebeat
-  #   volumes:
-  #     - ./deployment/development/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-  #     - ./ss-notifier-api/storage/logs:/var/www/html/storage/logs:ro
-  #     - filebeat_data:/usr/share/filebeat/data
-  #   environment:
-  #     - ENVIRONMENT=${ENVIRONMENT}
-  #   depends_on:
-  #     - elasticsearch
-  #     - kibana
-  #   networks:
-  #     - ss-notifier-network
-  #   restart: "unless-stopped"
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:9.1.4
+    container_name: ss-notifier-filebeat
+    volumes:
+      - ./deployment/development/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./ss-notifier-api/storage/logs:/var/www/html/storage/logs:ro
+      - filebeat_data:/usr/share/filebeat/data
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT}
+    depends_on:
+      - elasticsearch
+      - kibana
+      - php-worker
+    networks:
+      - ss-notifier-network
+    restart: "unless-stopped"
 
 networks:
   ss-notifier-network:
