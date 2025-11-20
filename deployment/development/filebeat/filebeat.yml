@@ -5,8 +5,6 @@ filebeat.inputs:
     paths:
       - /var/www/html/storage/logs/laravel.log*
     exclude_files: ['worker.log*', 'cron.log*', 'api.log*']
-    prospector.scanner.fingerprint.length: 256
-    prospector.scanner.fingerprint.offset: 0
     parsers:
       - ndjson:
           keys_under_root: true
@@ -15,20 +13,16 @@ filebeat.inputs:
     fields:
       log_type: app
       source: laravel
-      environment: local 
+      environment: local
     fields_under_root: true
     tags: ["laravel", "application"]
-    close_inactive: 1h
     scan_frequency: 10s
-
 
   - type: filestream
     id: worker-logs
     enabled: true
     paths:
       - /var/www/html/storage/logs/worker.log*
-    prospector.scanner.fingerprint.length: 256
-    prospector.scanner.fingerprint.offset: 0
     parsers:
       - ndjson:
           keys_under_root: true
@@ -39,34 +33,13 @@ filebeat.inputs:
       source: queue
     fields_under_root: true
     tags: ["worker", "queue"]
-    close_inactive: 1h
     scan_frequency: 10s
-
-  # - type: filestream
-  #   id: cron-logs
-  #   enabled: true
-  #   paths:
-  #     - /var/www/html/storage/logs/cron.log*
-  #   parsers:
-  #     - multiline:
-  #         pattern: '^[A-Z][a-z]{2} [0-9]{1,2}'
-  #         negate: false
-  #         match: after
-  #   fields:
-  #     log_type: cron
-  #     source: scheduler
-  #   fields_under_root: true
-  #   tags: ["cron", "scheduler"]
-  #   close_inactive: 1h
-  #   scan_frequency: 10s
 
   - type: filestream
     id: api-logs
     enabled: true
     paths:
       - /var/www/html/storage/logs/api.log*
-    prospector.scanner.fingerprint.length: 256
-    prospector.scanner.fingerprint.offset: 0
     parsers:
       - ndjson:
           keys_under_root: true
@@ -76,67 +49,22 @@ filebeat.inputs:
       log_type: api
       source: http
     fields_under_root: true
-    tags: ["api", "http", "requests"]
-    close_inactive: 1h
+    tags: ["api", "http"]
     scan_frequency: 10s
-
-processors:
-  - add_host_metadata: ~
-  - add_cloud_metadata: ~
-  - add_docker_metadata: ~
-  - decode_json_fields:
-      fields: ["message", "context"]
-      process_array: false
-      max_depth: 1
-      target: ""
-      overwrite_keys: true
-  - add_fields:
-      target: ""
-      fields:
-        filebeat_source: "laravel_logs"
-  # Set index name based on log_type using script processor
-  - script:
-      lang: javascript
-      source: |
-        function process(evt) {
-          var logType = evt.Get("log_type");
-          if (!logType) {
-            logType = "app";
-          }
-          
-          var date = new Date();
-          var year = date.getFullYear();
-          var month = String(date.getMonth() + 1);
-          if (month.length === 1) month = "0" + month;
-          var day = String(date.getDate());
-          if (day.length === 1) day = "0" + day;
-          var dateStr = year + "." + month + "." + day;
-          
-          var indexName;
-          if (logType === "worker") {
-            indexName = "worker-logs-" + dateStr;
-          } else if (logType === "api") {
-            indexName = "api-logs-" + dateStr;
-          } else {
-            indexName = "app-logs-" + dateStr;
-          }
-          
-          evt.Put("@metadata.index", indexName);
-        }
 
 output.elasticsearch:
   hosts: ["elasticsearch:9200"]
-  index: "%{[@metadata.index]}"
-  bulk_max_size: 50
-  timeout: 90
-  
-setup.template.enabled: false 
-setup.ilm.enabled: false
+  indices:
+    - index: "app-logs-%{+yyyy.MM.dd}"
+      when.equals:
+        log_type: app
+    - index: "worker-logs-%{+yyyy.MM.dd}"
+      when.equals:
+        log_type: worker
+    - index: "api-logs-%{+yyyy.MM.dd}"
+      when.equals:
+        log_type: api
 
-setup.use_data_streams: false
-
-setup.kibana:
-  host: "kibana:5601"
-
-logging.json: true
-logging.level: info
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded

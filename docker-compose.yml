@@ -103,6 +103,7 @@ services:
     container_name: ss-notifier-kibana
     environment:
       - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS}
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${KIBANA_ENCRYPTION_KEY}
     volumes:
       - ./deployment/development/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
     ports:

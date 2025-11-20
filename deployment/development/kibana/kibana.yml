@@ -3,5 +3,6 @@ server.host: "0.0.0.0"
 elasticsearch.hosts: ["http://elasticsearch:9200"]
 monitoring.ui.container.elasticsearch.enabled: true
 
-xpack.encryptedSavedObjects.encryptionKey: 'min32characterslongencryptionkey!'
+# Encryption key is set via environment variable XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY
+# Do not hardcode secrets in this file
 
